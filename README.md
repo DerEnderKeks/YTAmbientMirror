@@ -1,6 +1,6 @@
 # YTAmbientMirror
 
-This [Tampermonkey](https://tampermonkey.net/) script replaces the blakc borders of the [Youtube](https://www.youtube.com/) video player with a blurred copy of the video. 
+This [Tampermonkey](https://tampermonkey.net/) script replaces the black borders of the [Youtube](https://www.youtube.com/) video player with a blurred copy of the video. 
 
 ## Installation
 
