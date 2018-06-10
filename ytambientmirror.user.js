@@ -16,7 +16,6 @@
 // ==/UserScript==
 
 var blurRadius = '15px';
-var updateDelay = 25;
 
 var videoElements = document.getElementsByTagName('video');
 var ambientElements = [];
@@ -32,7 +31,9 @@ function updateAmbientVideo(video, context, w, h) {
     if (video.paused || video.ended) return false;
     context.filter = `blur(${blurRadius})`;
     context.drawImage(video, 0, 0, w, h);
-    setTimeout(updateAmbientVideo, updateDelay, video, context, w, h);
+    requestAnimationFrame(() => {
+        updateAmbientVideo(video, context, w, h);
+    });
 }
 
 var getAmbient = (videoElement) => {
