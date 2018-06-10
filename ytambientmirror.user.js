@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.1
+// @version      0.0.2
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
