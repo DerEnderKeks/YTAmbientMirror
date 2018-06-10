@@ -8,4 +8,4 @@ First [install Tampermonkey](https://tampermonkey.net/) and then click [here](ht
 
 ## Usage
 
-Press `A` to toggle the ambient video on or off.
+Press `W` to toggle the ambient video on or off.

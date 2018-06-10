@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 var blurRadius = '15px';
-var updateDelay = 50;
+var updateDelay = 25;
 
 var videoElements = document.getElementsByTagName('video');
 var ambientElements = [];
