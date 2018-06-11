@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.2
+// @version      0.0.3
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -54,10 +54,17 @@ var getCanvasSizes = (canvasElement) => {
     return [canvasElement.clientWidth, canvasElement.clientHeight]
 }
 
-var videoEventListener = (event) => {
+var videoPlayEventListener = (event) => {
     var ambientElement = getAmbient(event.target);
+    ambientElement.style.display = 'block';
     var context = getContext(ambientElement)
     updateAmbientVideo(event.target, context, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
+}
+
+var videoEndedEventListener = (event) => {
+    if (!GM_getValue('ambientEnabled', true)) return;
+    var ambientElement = getAmbient(event.target);
+    ambientElement.style.display = 'none';
 }
 
 var addAmbientCanvas = (videoElement) => {
@@ -74,7 +81,8 @@ var addAmbientCanvas = (videoElement) => {
     ambientElements.push([ambientElement, context]);
     videoMap.push([videoElement, ambientElement]);
 
-    videoElement.addEventListener('play', videoEventListener, false);
+    videoElement.addEventListener('play', videoPlayEventListener, false);
+    videoElement.addEventListener('ended', videoEndedEventListener, false);
     context.drawImage(videoElement, 0, 0, ambientElement.width, ambientElement.height);
 }
 
@@ -92,7 +100,8 @@ var apply = () => {
     } else {
         for (var i = 0; i < videoElements.length; i++) {
             if (!videoElements[i]) continue;
-            videoElements[i].removeEventListener('play', videoEventListener);
+            videoElements[i].removeEventListener('play', videoPlayEventListener);
+            videoElements[i].removeEventListener('play', videoEndedEventListener);
         }
         for (var j = 0; j < ambientElements.length; j++) {
             if (!ambientElements[j]) continue;
