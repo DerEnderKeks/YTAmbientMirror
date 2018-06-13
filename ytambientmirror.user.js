@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.3
+// @version      0.0.4
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -15,100 +15,116 @@
 // @run-at       document-end
 // ==/UserScript==
 
-var blurRadius = '15px';
+let blurRadius = '15px';
 
-var videoElements = document.getElementsByTagName('video');
-var ambientElements = [];
-var videoMap = [];
+let videoElements = document.getElementsByTagName('video');
+let ambientElementMap = new Map();
+let videoMap = new Map();
+let videoObserverMap = new Map();
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
-    get: function(){
+    get: function() {
         return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
     }
 })
 
-function updateAmbientVideo(video, context, w, h) {
+const updateAmbientVideo = (video, context) => {
     if (video.paused || video.ended) return false;
+    let ambientElement = videoMap.get(video);
     context.filter = `blur(${blurRadius})`;
-    context.drawImage(video, 0, 0, w, h);
+    context.drawImage(video, 0, 0, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
     requestAnimationFrame(() => {
-        updateAmbientVideo(video, context, w, h);
+        updateAmbientVideo(video, context);
     });
 }
 
-var getAmbient = (videoElement) => {
-    for (var i = 0; i < videoMap.length; i++) {
-        if (!videoMap[i] || videoMap[i][0] != videoElement) continue;
-        return videoMap[i][1];
-    }
+const getAmbient = (videoElement) => {
+    return videoMap.get(videoElement);
 }
 
-var getContext = (ambientElement) => {
-    for (var i = 0; i < ambientElements.length; i++) {
-        if (!ambientElements[i] || ambientElements[i][0] != ambientElement) continue;
-        return ambientElements[i][1];
-    }
+const getContext = (ambientElement) => {
+    return ambientElementMap.get(ambientElement);
 }
 
-var getCanvasSizes = (canvasElement) => {
+const getCanvasSizes = (canvasElement) => {
     return [canvasElement.clientWidth, canvasElement.clientHeight]
 }
 
-var videoPlayEventListener = (event) => {
-    var ambientElement = getAmbient(event.target);
+const videoPlayEventListener = (event) => {
+    let ambientElement = getAmbient(event.target);
     ambientElement.style.display = 'block';
-    var context = getContext(ambientElement)
-    updateAmbientVideo(event.target, context, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
+    let context = getContext(ambientElement);
+    updateAmbientVideo(event.target, context);
 }
 
-var videoEndedEventListener = (event) => {
+const videoEndedEventListener = (event) => {
     if (!GM_getValue('ambientEnabled', true)) return;
-    var ambientElement = getAmbient(event.target);
+    let ambientElement = getAmbient(event.target);
     ambientElement.style.display = 'none';
 }
 
-var addAmbientCanvas = (videoElement) => {
-    if (!(videoElement instanceof HTMLElement)) return;
-    var ambientElement = document.createElement('canvas')
-    videoElement.parentElement.insertBefore(ambientElement, videoElement);
-    ambientElement.style.width = '100%';
+const updateCanvasSize = (videoElement) => {
+    let ambientElement = videoMap.get(videoElement);
     ambientElement.style.height = videoElement.style.height;
-
-    var context = ambientElement.getContext('2d');
-    context.filter = `blur(${blurRadius})`;
     ambientElement.width = getCanvasSizes(ambientElement)[0];
     ambientElement.height = getCanvasSizes(ambientElement)[1];
-    ambientElements.push([ambientElement, context]);
-    videoMap.push([videoElement, ambientElement]);
+}
+
+const addResizeObserver = (videoElement) => {
+    let lastState = Object.assign({}, videoElement.style);
+    let config = {attributes: true};
+    let callback = (mutationsList) => {
+        for (let mutation of mutationsList) {
+            if (mutation.type == 'attributes' && (lastState.height !== videoElement.style.height || lastState.width !== videoElement.style.width)) {
+                lastState = Object.assign({}, videoElement.style);
+                updateCanvasSize(videoElement);
+            }
+        }
+    };
+    videoObserverMap.set(videoElement, new MutationObserver(callback));
+    videoObserverMap.get(videoElement).observe(videoElement, config);
+}
+
+const addAmbientCanvas = (videoElement) => {
+    if (!(videoElement instanceof HTMLElement)) return;
+    let ambientElement = document.createElement('canvas')
+    videoElement.parentElement.insertBefore(ambientElement, videoElement);
+    videoMap.set(videoElement, ambientElement);
+    ambientElement.style.width = '100%';
+    updateCanvasSize(videoElement);
+
+    let context = ambientElement.getContext('2d');
+    context.filter = `blur(${blurRadius})`;
+    ambientElementMap.set(ambientElement, context);
+    addResizeObserver(videoElement);
 
     videoElement.addEventListener('play', videoPlayEventListener, false);
     videoElement.addEventListener('ended', videoEndedEventListener, false);
-    context.drawImage(videoElement, 0, 0, ambientElement.width, ambientElement.height);
+    context.drawImage(videoElement, 0, 0, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
 }
 
-var apply = () => {
+const apply = () => {
     if (GM_getValue('ambientEnabled', true)) {
-        for (var i = 0; i < videoElements.length; i++) {
-            if (!videoElements[i]) continue;
-            addAmbientCanvas(videoElements[i]);
-            if (videoElements[i].playing) {
-                var ambientElement = getAmbient(videoElements[i]);
-                var context = getContext(ambientElement)
-                updateAmbientVideo(videoElements[i], context, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
+        for (let videoElement of videoElements) {
+            addAmbientCanvas(videoElement);
+            if (videoElement.playing) {
+                let ambientElement = getAmbient(videoElement);
+                let context = getContext(ambientElement);
+                updateAmbientVideo(videoElement, context);
             }
         }
     } else {
-        for (var i = 0; i < videoElements.length; i++) {
-            if (!videoElements[i]) continue;
-            videoElements[i].removeEventListener('play', videoPlayEventListener);
-            videoElements[i].removeEventListener('play', videoEndedEventListener);
+        for (let videoElement of videoElements) {
+            videoElement.removeEventListener('play', videoPlayEventListener);
+            videoElement.removeEventListener('play', videoEndedEventListener);
+            if (videoObserverMap.get(videoElement)) videoObserverMap.get(videoElement).disconnect();
         }
-        for (var j = 0; j < ambientElements.length; j++) {
-            if (!ambientElements[j]) continue;
-            ambientElements[j][0].outerHTML = '';
+        for (let ambientElement of ambientElementMap.keys()) {
+            ambientElement.outerHTML = '';
         }
-        ambientElements = [];
-        videoMap = [];
+        ambientElementMap = new Map();
+        videoMap = new Map();
+        videoObserverMap = new Map();
     }
 }
 
