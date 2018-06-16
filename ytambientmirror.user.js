@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.4
+// @version      0.0.5
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -65,7 +65,7 @@ const videoEndedEventListener = (event) => {
 
 const updateCanvasSize = (videoElement) => {
     let ambientElement = videoMap.get(videoElement);
-    ambientElement.style.height = videoElement.style.height;
+    ambientElement.style.height = Math.abs(Math.ceil(parseInt(videoElement.style.height, 10) + (2 * parseInt(videoElement.style.top, 10)))) + 'px';
     ambientElement.width = getCanvasSizes(ambientElement)[0];
     ambientElement.height = getCanvasSizes(ambientElement)[1];
 }
