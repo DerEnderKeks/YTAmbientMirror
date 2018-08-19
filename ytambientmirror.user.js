@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.5
+// @version      0.0.6
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -129,7 +129,7 @@ const apply = () => {
 }
 
 document.addEventListener('keypress', (event) => {
-    if (event.code === 'KeyW') {
+    if (event.key === 'w') {
         GM_setValue('ambientEnabled', !GM_getValue('ambientEnabled', true));
         apply();
         console.log(`Toogled ambient video ${GM_getValue('ambientEnabled', true) ? 'on' : 'off'}`);
