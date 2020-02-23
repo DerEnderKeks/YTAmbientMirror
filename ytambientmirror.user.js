@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.6
+// @version      0.0.7
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -24,7 +24,7 @@ let videoObserverMap = new Map();
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function() {
-        return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
+        return !!(!this.paused && !this.ended && this.readyState > 2);
     }
 })
 
@@ -103,28 +103,36 @@ const addAmbientCanvas = (videoElement) => {
     context.drawImage(videoElement, 0, 0, getCanvasSizes(ambientElement)[0], getCanvasSizes(ambientElement)[1]);
 }
 
+const install = (videoElement) => {
+    addAmbientCanvas(videoElement);
+    if (videoElement.playing) {
+        let ambientElement = getAmbient(videoElement);
+        let context = getContext(ambientElement);
+        updateAmbientVideo(videoElement, context);
+    }
+}
+
+const uninstall = () => {
+    for (let videoElement of videoElements) {
+        videoElement.removeEventListener('play', videoPlayEventListener);
+        videoElement.removeEventListener('play', videoEndedEventListener);
+        if (videoObserverMap.get(videoElement)) videoObserverMap.get(videoElement).disconnect();
+    }
+    for (let ambientElement of ambientElementMap.keys()) {
+        ambientElement.outerHTML = '';
+    }
+    ambientElementMap = new Map();
+    videoMap = new Map();
+    videoObserverMap = new Map();
+}
+
 const apply = () => {
     if (GM_getValue('ambientEnabled', true)) {
         for (let videoElement of videoElements) {
-            addAmbientCanvas(videoElement);
-            if (videoElement.playing) {
-                let ambientElement = getAmbient(videoElement);
-                let context = getContext(ambientElement);
-                updateAmbientVideo(videoElement, context);
-            }
+            install(videoElement);
         }
     } else {
-        for (let videoElement of videoElements) {
-            videoElement.removeEventListener('play', videoPlayEventListener);
-            videoElement.removeEventListener('play', videoEndedEventListener);
-            if (videoObserverMap.get(videoElement)) videoObserverMap.get(videoElement).disconnect();
-        }
-        for (let ambientElement of ambientElementMap.keys()) {
-            ambientElement.outerHTML = '';
-        }
-        ambientElementMap = new Map();
-        videoMap = new Map();
-        videoObserverMap = new Map();
+        uninstall();
     }
 }
 
@@ -136,4 +144,12 @@ document.addEventListener('keypress', (event) => {
     }
 });
 
-apply();
+window.addEventListener("load", () => {
+  const delayedFunction = (event) => {
+      install(event.target);
+      event.target.removeEventListener('loadeddata', delayedFunction);
+  }
+  for (let videoElement of videoElements) {
+      videoElement.addEventListener('loadeddata', delayedFunction);
+  }
+});
