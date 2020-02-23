@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube Ambient Mirror
 // @namespace    ytambientmirror
-// @version      0.0.7
+// @version      0.0.8
 // @description  Ambient video for the Youtube video player
 // @author       DerEnderKeks
 // @website      https://github.com/DerEnderKeks/YTAmbientMirror
@@ -145,11 +145,16 @@ document.addEventListener('keypress', (event) => {
 });
 
 window.addEventListener("load", () => {
-  const delayedFunction = (event) => {
-      install(event.target);
-      event.target.removeEventListener('loadeddata', delayedFunction);
-  }
-  for (let videoElement of videoElements) {
-      videoElement.addEventListener('loadeddata', delayedFunction);
-  }
-});
+    if (!GM_getValue('ambientEnabled', true)) return;
+    const delayedFunction = (event) => {
+        install(event.target);
+        event.target.removeEventListener('loadeddata', delayedFunction);
+    }
+    for (let videoElement of videoElements) {
+        if (videoElement.playing) {
+            install(videoElement);
+        } else {
+            videoElement.addEventListener('loadeddata', delayedFunction);
+        }
+    }
+})
